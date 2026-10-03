@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhysioTrace AI - Real-time Posture & Exercise Coach</title>
+  <meta name="description" content="AI-powered real-time webcam posture coach and exercise tracker.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Navigation Bar -->
+    <header class="top-bar">
+      <div class="brand">
+        <div class="brand-icon">
+          <!-- Spine / Posture SVG Logo -->
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="4" r="2.5"></circle>
+            <path d="M12 6.5v13.5"></path>
+            <path d="M9 10h6"></path>
+            <path d="M8.5 14h7"></path>
+            <path d="M9.5 18h5"></path>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <h1>PhysioTrace <span class="accent-text">AI</span></h1>
+          <span class="live-dot" id="live-indicator" title="Camera Active"></span>
+        </div>
+      </div>
+
+      <div class="top-controls">
+        <select id="exercise-select" class="control-select" aria-label="Select Exercise Mode">
+          <option value="Desk Posture">Mode: Desk Posture</option>
+          <option value="Squat">Mode: Squats</option>
+          <option value="Shoulder Raise">Mode: Shoulder Raise</option>
+          <option value="Neck Stretch">Mode: Neck Stretch</option>
+        </select>
+
+        <button id="demo-btn" class="btn btn-secondary btn-sm" title="Toggle Demo Mode">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>Demo</span>
+        </button>
+
+        <button id="mute-btn" class="btn-icon" aria-label="Toggle Mute Audio Alerts">
+          <svg id="mute-icon-unmuted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+          <svg id="mute-icon-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          </svg>
+        </button>
+
+        <button id="theme-btn" class="btn-icon" aria-label="Toggle Theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+          </svg>
+        </button>
+
+        <button id="finish-btn" class="btn btn-primary btn-sm">Finish Session</button>
+      </div>
+    </header>
+
+    <!-- Main Workspace (Fits exactly in viewport 100dvh) -->
+    <main class="main-workspace" id="live-workspace" style="display:none;">
+      <!-- Camera Stage Area -->
+      <section class="camera-stage" aria-label="Camera Video Stage">
+        <div class="video-container" id="video-container">
+          <video id="webcam" playsinline muted></video>
+          <canvas id="skeleton-canvas"></canvas>
+
+          <!-- Frame Guide Silhouette Overlay -->
+          <div class="frame-guide" id="frame-guide">
+            <div class="guide-outline" id="guide-outline"></div>
+            <div class="guide-hint" id="guide-hint">Step back until your head and feet fit</div>
+          </div>
+
+          <!-- Top-Left Compact Score Ring Overlay -->
+          <div class="stage-overlay top-left-overlay">
+            <div class="compact-score-chip">
+              <svg class="compact-ring-svg" viewBox="0 0 40 40">
+                <circle class="compact-ring-bg" cx="20" cy="20" r="16"></circle>
+                <circle id="compact-ring-path" class="compact-ring-progress" cx="20" cy="20" r="16" stroke-dasharray="100.53" stroke-dashoffset="0"></circle>
+              </svg>
+              <span id="compact-score-val" class="compact-score-num">100</span>
+            </div>
+          </div>
+
+          <!-- Top-Right Status Pill -->
+          <div class="stage-overlay top-right-overlay">
+            <div class="status-pill" id="status-pill">
+              <span class="status-dot" id="status-dot"></span>
+              <span id="status-text">Ready</span>
+            </div>
+          </div>
+
+          <!-- Bottom Floating Coach Pill (No overlap on face) -->
+          <div class="stage-overlay bottom-center-overlay">
+            <div class="coach-pill" id="floating-coach-pill">
+              <span id="coach-arrow-icon" class="coach-arrow">✨</span>
+              <span id="floating-coach-text">Sit tall and relaxed</span>
+            </div>
+          </div>
+
+          <!-- Rep Counter Floating Chip -->
+          <div class="stage-overlay bottom-left-overlay" id="rep-chip-overlay" style="display:none;">
+            <div class="rep-chip">
+              <span class="rep-chip-label">Reps</span>
+              <span class="rep-chip-val" id="rep-chip-num">0</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Sidebar (Internal Scroll Only) -->
+      <aside class="sidebar-panel">
+        <!-- a) Hero Score Card -->
+        <section class="card hero-score-card">
+          <div class="hero-score-header">
+            <div class="ring-wrapper">
+              <svg class="hero-ring-svg" viewBox="0 0 100 100">
+                <defs>
+                  <linearGradient id="score-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#2DD4BF" id="grad-start" />
+                    <stop offset="100%" stop-color="#10B981" id="grad-end" />
+                  </linearGradient>
+                </defs>
+                <circle class="hero-ring-bg" cx="50" cy="50" r="45"></circle>
+                <circle id="hero-ring-path" class="hero-ring-progress" cx="50" cy="50" r="45" stroke="url(#score-gradient)" stroke-dasharray="282.74" stroke-dashoffset="0"></circle>
+              </svg>
+              <div class="hero-score-center">
+                <span class="hero-score-num" id="hero-score-val">100</span>
+                <span class="hero-score-sub">SCORE</span>
+              </div>
+            </div>
+
+            <div class="hero-grade-box">
+              <div class="hero-grade-title" id="hero-grade-text">Excellent</div>
+              <div class="hero-grade-subtitle">Live Posture Grade</div>
+            </div>
+          </div>
+
+          <!-- 2-Minute Score History Sparkline -->
+          <div class="hero-sparkline-box">
+            <div class="sparkline-label-row">
+              <span>2-Min History</span>
+              <span id="sparkline-score-curr">100 / 100</span>
+            </div>
+            <canvas id="sparkline-canvas"></canvas>
+          </div>
+        </section>
+
+        <!-- b) Attention Coach Card -->
+        <section class="card attention-coach-card" id="attention-coach-card">
+          <div class="attention-card-header">
+            <span class="attention-tag">LIVE COACH</span>
+            <span class="source-badge" id="coach-badge-el">Offline coach</span>
+          </div>
+          <div class="attention-body">
+            <span class="attention-arrow" id="attention-arrow">✨</span>
+            <div class="attention-text" id="attention-text">Nice, posture looks great! Hold it there.</div>
+          </div>
+        </section>
+
+        <!-- c) Live Angles Horizontal Gauges -->
+        <section class="card live-angles-card">
+          <h3 class="card-heading">Live Joint Gauges</h3>
+          <div class="gauges-container">
+            <!-- Neck Angle Gauge -->
+            <div class="gauge-item">
+              <div class="gauge-label-row">
+                <span class="gauge-name">Neck Tilt</span>
+                <span class="gauge-val" id="gauge-neck-val">0°</span>
+              </div>
+              <div class="gauge-track">
+                <div class="gauge-safe-zone" style="left: 0%; width: 50%;"></div>
+                <div class="gauge-marker" id="gauge-neck-marker" style="left: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Trunk Lean Gauge -->
+            <div class="gauge-item">
+              <div class="gauge-label-row">
+                <span class="gauge-name">Trunk Lean</span>
+                <span class="gauge-val" id="gauge-trunk-val">0°</span>
+              </div>
+              <div class="gauge-track">
+                <div class="gauge-safe-zone" style="left: 0%; width: 45%;"></div>
+                <div class="gauge-marker" id="gauge-trunk-marker" style="left: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Shoulder Tilt Gauge -->
+            <div class="gauge-item">
+              <div class="gauge-label-row">
+                <span class="gauge-name">Shoulder Tilt</span>
+                <span class="gauge-val" id="gauge-shoulder-val">0°</span>
+              </div>
+              <div class="gauge-track">
+                <div class="gauge-safe-zone" style="left: 0%; width: 35%;"></div>
+                <div class="gauge-marker" id="gauge-shoulder-marker" style="left: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Knee Angle Gauge -->
+            <div class="gauge-item">
+              <div class="gauge-label-row">
+                <span class="gauge-name">Knee Flexion</span>
+                <span class="gauge-val" id="gauge-knee-val">175°</span>
+              </div>
+              <div class="gauge-track">
+                <div class="gauge-safe-zone" style="left: 80%; width: 20%;"></div>
+                <div class="gauge-marker" id="gauge-knee-marker" style="left: 95%;"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- d) Exercise Suggestions Cards -->
+        <section class="card exercises-card">
+          <h3 class="card-heading">Corrective Exercises</h3>
+          <div class="exercise-cards-wrapper" id="exercise-cards-container">
+            <!-- Dynamic exercise items -->
+          </div>
+        </section>
+
+        <!-- e) Session Strip Tiles -->
+        <section class="card session-strip-card">
+          <div class="stat-tiles-grid">
+            <div class="tile">
+              <span class="tile-label">Duration</span>
+              <span class="tile-val" id="tile-time">00:00</span>
+            </div>
+            <div class="tile">
+              <span class="tile-label">Avg Score</span>
+              <span class="tile-val" id="tile-avg-score">100</span>
+            </div>
+            <div class="tile">
+              <span class="tile-label">Slouch Time</span>
+              <span class="tile-val" id="tile-bad-time">0s</span>
+            </div>
+            <div class="tile">
+              <span class="tile-label">Reps</span>
+              <span class="tile-val" id="tile-reps">0</span>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <!-- Full-Screen Welcome View -->
+    <div class="fullscreen-view welcome-view" id="welcome-view">
+      <div class="welcome-container">
+        <!-- Left Column: Copy & Actions -->
+        <div class="welcome-left">
+          <div class="welcome-badge">AI BIOMECHANICS & POSTURE COACH</div>
+          <h2 class="welcome-headline">Train Perfect Posture in Real-Time</h2>
+          <p class="welcome-subtext">
+            PhysioTrace AI analyzes your posture at 30+ FPS directly in your browser. Get instant voice alerts, live joint angles, and Gemma AI ergonomics coaching.
+          </p>
+
+          <div class="welcome-stepper">
+            <div class="step-card">
+              <div class="step-icon">1</div>
+              <div>
+                <strong>Position Camera</strong>
+                <p>Sit or stand side-on showing head to hips.</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-icon">2</div>
+              <div>
+                <strong>Privacy First</strong>
+                <p>Video stays local on device. Only numeric angles sent.</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-icon">3</div>
+              <div>
+                <strong>Live Coaching</strong>
+                <p>Get instant feedback and custom exercises.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="privacy-optin-box">
+            <label class="checkbox-label">
+              <input type="checkbox" id="form-check-opt-in" checked>
+              <span>Enable AI visual keyframe analysis (1 low-res JPEG frame every 15s)</span>
+            </label>
+          </div>
+
+          <div class="welcome-actions">
+            <button id="start-camera-btn" class="btn btn-primary btn-lg">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+              <span>Start Camera</span>
+            </button>
+            <button id="start-demo-btn" class="btn btn-secondary btn-lg">
+              <span>Try Demo Mode</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Column: Animated Posture Skeleton Illustration -->
+        <div class="welcome-right">
+          <div class="skeleton-demo-card">
+            <svg class="welcome-skeleton-svg" viewBox="0 0 300 400">
+              <path class="skele-spine slouched-spine" d="M150 70 Q 185 170 145 270" stroke="#F43F5E" stroke-width="6" fill="none" />
+              <path class="skele-spine upright-spine" d="M150 70 Q 150 170 150 270" stroke="#2DD4BF" stroke-width="6" fill="none" />
+              
+              <!-- Key joints -->
+              <circle cx="150" cy="50" r="16" fill="none" stroke="currentColor" stroke-width="3" />
+              <circle cx="150" cy="70" r="6" fill="var(--accent-mint)" />
+              <circle cx="150" cy="120" r="6" fill="var(--accent-mint)" />
+              <circle cx="150" cy="200" r="6" fill="var(--accent-mint)" />
+              <circle cx="150" cy="270" r="6" fill="var(--accent-mint)" />
+              <circle cx="150" cy="350" r="6" fill="var(--accent-mint)" />
+
+              <!-- Angle indicator arc -->
+              <path d="M150 70 A 30 30 0 0 1 175 95" stroke="#F43F5E" stroke-width="3" fill="none" stroke-dasharray="4 4" />
+            </svg>
+            <div class="skele-caption">Real-Time Biomechanical Angle Detection</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calibration Countdown Overlay View -->
+    <div class="modal-overlay" id="calibration-modal" style="display:none;">
+      <div class="modal-card">
+        <h3 class="modal-title">Calibrating Good Posture</h3>
+        <p class="modal-sub">Sit tall, roll shoulders back, and look straight ahead.</p>
+        <div class="calib-ring-wrapper">
+          <svg class="calib-svg" viewBox="0 0 100 100">
+            <circle class="calib-bg" cx="50" cy="50" r="42"></circle>
+            <circle id="calib-ring-path" class="calib-progress" cx="50" cy="50" r="42" stroke-dasharray="263.89" stroke-dashoffset="0"></circle>
+          </svg>
+          <span class="calib-num" id="calib-countdown">3</span>
+        </div>
+        <p class="calib-hint">Learning your natural upright baseline...</p>
+      </div>
+    </div>
+
+    <!-- Full-Screen Session Summary View -->
+    <div class="fullscreen-view summary-view" id="summary-view" style="display:none;">
+      <div class="summary-container">
+        <!-- Header verdict -->
+        <div class="summary-header">
+          <h2 class="summary-title">Session Summary</h2>
+          <div class="verdict-banner" id="sum-verdict-banner">
+            <span class="verdict-grade" id="sum-grade-text">Excellent Form</span>
+            <span class="verdict-desc" id="sum-verdict-desc">You maintained strong postural alignment throughout the session.</span>
+          </div>
+        </div>
+
+        <!-- Short session insufficient data state container -->
+        <div id="insufficient-data-box" style="display:none;" class="insufficient-box">
+          <div class="insufficient-icon">⏱️</div>
+          <h3>Not Enough Data Yet</h3>
+          <p>Your session was under 10 seconds. Run a longer posture session or exercise set to generate detailed analytics.</p>
+          <button id="short-restart-btn" class="btn btn-primary btn-md">Start Again</button>
+        </div>
+
+        <!-- Full Results Content Grid -->
+        <div id="summary-results-grid" class="summary-grid">
+          <!-- Final Score & Timeline Row -->
+          <div class="summary-card main-score-timeline">
+            <div class="score-circle-box">
+              <svg class="sum-ring-svg" viewBox="0 0 100 100">
+                <circle class="sum-ring-bg" cx="50" cy="50" r="42"></circle>
+                <circle id="sum-ring-path" class="sum-ring-progress" cx="50" cy="50" r="42" stroke-dasharray="263.89" stroke-dashoffset="0"></circle>
+              </svg>
+              <div class="sum-score-text" id="sum-avg-score">94</div>
+            </div>
+            
+            <div class="timeline-box">
+              <h4>Posture Timeline History</h4>
+              <canvas id="summary-timeline-canvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Stat Tiles Row -->
+          <div class="summary-stats-tiles">
+            <div class="sum-tile">
+              <span class="sum-tile-label">Duration</span>
+              <span class="sum-tile-val" id="sum-duration-val">05:20</span>
+            </div>
+            <div class="sum-tile">
+              <span class="sum-tile-label">Best Streak</span>
+              <span class="sum-tile-val" id="sum-streak-val">03:45</span>
+            </div>
+            <div class="sum-tile">
+              <span class="sum-tile-label">Time in Slouch</span>
+              <span class="sum-tile-val" id="sum-bad-time">00:15</span>
+            </div>
+            <div class="sum-tile">
+              <span class="sum-tile-label">Reps Completed</span>
+              <span class="sum-tile-val" id="sum-reps-val">12</span>
+            </div>
+          </div>
+
+          <!-- Top 3 Fixes -->
+          <div class="summary-card fixes-card">
+            <h4>Your Top 3 Improvement Fixes</h4>
+            <div class="fixes-list" id="sum-fixes-list">
+              <div class="fix-item">
+                <span class="fix-num">1</span>
+                <div>
+                  <strong>Perform Chin Tucks</strong>
+                  <p>Pull head straight back gently to align neck over shoulders.</p>
+                </div>
+              </div>
+              <div class="fix-item">
+                <span class="fix-num">2</span>
+                <div>
+                  <strong>Elevate Monitor Screen</strong>
+                  <p>Raise primary display so top line of text aligns with eye level.</p>
+                </div>
+              </div>
+              <div class="fix-item">
+                <span class="fix-num">3</span>
+                <div>
+                  <strong>Thoracic Extensions</strong>
+                  <p>Take 5 deep breaths while extending back over chair rest.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Try This Next Exercise Row -->
+          <div class="summary-card exercises-recommendation-card">
+            <h4>Try This Next</h4>
+            <div class="next-ex-row" id="sum-next-exercises">
+              <!-- Dynamic exercises -->
+            </div>
+          </div>
+
+          <!-- Download & Action Buttons -->
+          <div class="summary-actions">
+            <button id="download-json-btn" class="btn btn-secondary">Download JSON</button>
+            <button id="download-csv-btn" class="btn btn-secondary">Download CSV</button>
+            <button id="copy-summary-btn" class="btn btn-secondary">Copy Summary</button>
+            <button id="restart-btn" class="btn btn-primary">Start Again</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

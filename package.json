@@ -1,0 +1,30 @@
+{
+  "name": "physiotrace-ai",
+  "version": "1.0.0",
+  "description": "Real-time posture and exercise coach powered by MediaPipe and Gemma AI",
+  "main": "server/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/server.js",
+    "test:unit": "vitest run tests/unit.test.js",
+    "test:server": "vitest run tests/server.test.js",
+    "test:e2e": "playwright test",
+    "test": "vitest run && playwright test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "axe-core": "^4.13.0",
+    "canvas": "^3.2.3",
+    "playwright": "^1.63.0",
+    "vitest": "^5.0.3"
+  }
+}
