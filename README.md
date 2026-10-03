@@ -1,117 +1,148 @@
- HEAD
-# PhysioTrace AI - Real-Time Posture & Exercise Coach 🧘‍♂️⚡
+# 🧘 PhysioTrack
 
-PhysioTrace AI is a high-performance real-time posture monitor and exercise coach built for the browser. It combines local 30+ FPS GPU joint landmark detection using MediaPipe with intelligent biomechanical analysis and asynchronous Gemma AI coaching.
+**Real-Time AI Posture & Physiotherapy Assistant**
 
----
+PhysioTrack is a real-time posture detection and coaching web application that uses a laptop camera and AI to help users maintain better posture.
 
-## 🌟 Key Features
+It detects body landmarks, analyzes posture, provides a live posture score, and gives visual and voice feedback when incorrect posture is detected.
 
-1. **Fast-Loop Real-Time Tracking (Browser, 30+ FPS, <20ms Latency)**
-   - **MediaPipe PoseLandmarker Lite** running in VIDEO mode on GPU.
-   - 5 Joint Angle calculations: Neck forward tilt, Trunk slouch lean, Shoulder tilt asymmetry, Knee flexion, and Elbow angle.
-   - Exponential Moving Average (EMA, alpha 0.3) + 2-sample hysteresis for flicker-free alerts.
-   - Dynamic Posture Score ring (Green ≥80, Amber 60-79, Red <60).
-   - Mirrored Skeleton Overlay with color-coded bones and live degree labels.
+## ✨ Features
 
-2. **4 Exercise / Posture Modes**
-   - **Desk Posture**: Continuous slouch & neck angle monitoring.
-   - **Squat**: State machine hysteresis (Knee <105° down, >158° up = 1 rep).
-   - **Shoulder Raise**: Arm elevation & range of motion rep tracking.
-   - **Neck Stretch**: Timed isometric hold tracking (2.5s hold).
+* 📷 **Real-time posture detection** using MediaPipe
+* 🦴 **Live skeleton overlay** on the camera feed
+* 📊 **Live posture score** from 0–100
+* 📐 **Posture angle analysis**
+* 🚨 **Bad posture detection** with visual alerts
+* 🎤 **Voice coaching** for posture correction
+* 🤖 **Gemma AI Coach** for intelligent feedback
+* 💻 **Front and side view support**
+* 🏋️ **Exercise mode with rep counting**
+* 📈 **Session summary and posture history**
+* 🌐 **Offline coaching fallback**
+* 🎨 **Dark and light themes**
+* 📱 **Responsive interface**
 
-3. **Audio & Visual Alerts**
-   - Local `speechSynthesis` voice feedback triggered when posture breaks >1.5s (with 6s cooldown and mute toggle).
-   - Breached joint pulse animations and smooth color ring transitions.
+## 🛠️ Technologies Used
 
-4. **Slow-Loop Gemma AI Coaching (Every 6 Seconds)**
-   - Express server (`/api/coach`) with dynamic model discovery (automatically selecting the newest Gemma model from Gemini API `v1beta/models`).
-   - Asynchronous execution that **never blocks** the 30+ FPS camera loop.
-   - Defensive JSON parsing with automatic rule-based offline fallback if API key is missing or request times out.
-   - Actionable 1-sentence fixes, corrective exercises (Chin Tucks, Wall Angels, Thoracic Extensions), and safety disclaimer.
+* **HTML, CSS, JavaScript**
+* **MediaPipe Pose Landmarker**
+* **Google Gemma**
+* **Web Speech API**
+* **SVG**
+* **Node.js / Express**
+* **Playwright**
+* **Vitest / Unit Testing**
 
-5. **Session Analytics & Export**
-   - 2-Minute live score sparkline history.
-   - Calibration mode (3-second countdown to save custom upright baseline).
-   - Session summary modal with average score, time spent in bad posture, and total reps.
-   - One-click JSON & CSV session report downloads.
+## ⚙️ How It Works
 
-6. **Clinical Wellness Design System**
-   - Soft deep teal-ink dark theme (default) and clean light theme with toggle.
-   - Accessible WCAG AA compliance, responsive desktop/tablet/mobile layout.
-   - Built-in Demo Mode with synthetic pose sequence for presentations without camera.
-
----
-
-## 🚀 Quick Start Guide
-
-### 1. Install Dependencies
-```bash
-npm install
+```text
+Camera
+   ↓
+MediaPipe Pose Detection
+   ↓
+Body Landmarks
+   ↓
+Posture Analysis
+   ↓
+Shared Posture Thresholds
+   ↓
+Score + Skeleton + Warnings
+   ↓
+Gemma AI Coach / Offline Coach
+   ↓
+Visual + Voice Feedback
 ```
 
-### 2. Configure Environment Variables
-Copy `.env.example` to `.env`:
-```bash
-cp .env.example .env
+## 🎯 Detection
+
+PhysioTrack can analyze:
+
+* Head / neck tilt
+* Shoulder alignment
+* Slouching
+* Body posture
+* Exercise movements
+* Squat repetitions
+
+The application uses a shared threshold configuration so that the **score, warnings, skeleton colors, gauges, and coaching feedback remain consistent**.
+
+## 🏃 Exercise Mode
+
+Exercise mode can detect movements and count repetitions.
+
+For example:
+
+```text
+Start Squat
+    ↓
+Detect movement
+    ↓
+Check body position
+    ↓
+Count repetition
+    ↓
+Give posture feedback
 ```
-Open `.env` and add your Google Gemini API key:
-```env
-PORT=3000
-GOOGLE_API_KEY=your_gemini_api_key_here
-GEMMA_MODEL=
-```
 
-### 3. Start Server & Web App
-```bash
-npm start
-```
-Open your browser and navigate to: `http://localhost:3000`
+## 🤖 AI Coaching
 
----
+PhysioTrack uses **Gemma** to provide personalized posture suggestions.
 
-## 🎬 2-Minute Presentation Demo Script
+If AI coaching is unavailable, the application uses an **offline coaching fallback**, so basic posture feedback can still work.
 
-1. **Introduction (0:00 - 0:20)**
-   - Open `http://localhost:3000`. Show the clean welcome modal.
-   - Click **Try Demo Mode** (or **Start Camera**).
-   - Point out the 65% camera stage, the floating live posture score ring (100), and the status pill ("Demo Mode" / "Tracking").
+## 🔊 Voice Feedback
 
-2. **Good Posture Baseline & Live Angles (0:20 - 0:40)**
-   - Highlight the right sidebar showing live angles (Neck 10°, Trunk 8°, Shoulder 0°, Knee 175°).
-   - Note the green color coding on the ring and skeleton bones.
+The application can provide spoken feedback such as:
 
-3. **Slouch Detection & Speech Alert (0:40 - 1:10)**
-   - Watch the synthetic loop or lean forward into a slouch.
-   - Show the instant visual reaction: score ring turns coral red (drops to ~55), affected neck/trunk bones highlight red, and joint pulses.
-   - Listen to the voice alert: *"Correction: Neck Forward Tilt"*.
-   - Point out the Real-Time Coach card updating with actionable advice.
+* "Tracking started"
+* "Good posture. Hold it there."
+* Posture correction instructions
+* Periodic positive feedback
 
-4. **Exercise Mode & Rep Counter (1:10 - 1:35)**
-   - Select **Mode: Squats** from the top right dropdown.
-   - Watch the rep counter overlay increment as knee angle bends below 105° and returns above 158°.
+Voice coaching can also be muted from the interface.
 
-5. **Session Summary & Report Download (1:35 - 2:00)**
-   - Click **End Session**.
-   - Show the summary modal detailing Average Posture Score, Time in Slouch, Reps Completed, and Top Improvement Recommendations.
-   - Click **Download CSV** to inspect the exported analytics report.
+## 🔐 Privacy
 
----
+Camera processing is designed for real-time posture detection.
 
-## 🧪 Running Tests
+API keys are kept **server-side** and are not exposed in the frontend.
 
-### Unit Tests
-```bash
-npm run test:unit
-```
-### Server Tests
-```bash
-npm run test:server
-```
-### Browser End-to-End & Accessibility Tests
-```bash
-npx playwright test
-```
-=======
-# PhysioTrace
- 2a424a47b7296fd85074a2a6445e89ee47090c47
+> Never commit your `.env` file or API keys to GitHub.
+
+
+## 📸 Demo
+https://physiotracehf.vercel.app/ 
+
+PhysioTrack provides:
+
+* Welcome screen
+* Calibration screen
+* Live posture tracking
+* Real-time score
+* Skeleton visualization
+* AI coaching
+* Exercise mode
+* Session summary
+
+## 🌟 Why PhysioTrace AI?
+
+Traditional posture monitoring often requires someone else to observe and correct the user.
+
+PhysioTrace AI provides a simple alternative:
+
+**Camera → Detect → Analyze → Explain → Correct**
+
+It gives users immediate feedback while they are sitting, exercising, or practicing movements.
+
+## 🔮 Future Improvements
+
+* Personalized posture profiles
+* More physiotherapy exercises
+* Long-term posture analytics
+* Mobile application
+* More exercise detection
+* Personalized AI rehabilitation plans
+
+## 👩‍💻 Team
+
+Built for **Hacktoberfest Hack Day Surat 2026**.
