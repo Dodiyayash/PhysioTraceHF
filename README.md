@@ -143,6 +143,9 @@ It gives users immediate feedback while they are sitting, exercising, or practic
 * More exercise detection
 * Personalized AI rehabilitation plans
 
-## 👩‍💻 Team
+## 👩‍💻 Team Members
 
+   - Dodiyayash — Developer
+   - Tithi2515 — Developer
+   
 Built for **Hacktoberfest Hack Day Surat 2026**.
